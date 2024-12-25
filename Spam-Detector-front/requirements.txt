@@ -1,0 +1,9 @@
+flask==3.0.2
+joblib==1.4.2
+keras==3.7.0
+nltk==3.9.1
+numpy==1.26.4
+pandas==2.2.0
+scikit_learn==1.5.2
+tensorflow==2.18.0
+tensorflow_intel==2.18.0

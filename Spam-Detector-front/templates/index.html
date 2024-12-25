@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>垃圾邮件判定器</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+            background-image: url('/static/img.png');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6); /* 半透明黑色遮罩 */
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            font-family: 'Verdana', sans-serif;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 15px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Courier New', Courier, monospace;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease-in-out;
+        }
+
+        textarea:focus {
+            border-color: #4CAF50;
+        }
+
+        button {
+            padding: 12px 25px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            font-size: 16px;
+            font-family: 'Arial', sans-serif;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            font-family: 'Verdana', sans-serif;
+        }
+
+        td {
+            background-color: #fff;
+        }
+
+        .spam {
+            color: red;
+            font-weight: bold;
+        }
+
+        .legitimate {
+            color: green;
+            font-weight: bold;
+        }
+
+        .model-name {
+            font-weight: bold;
+            font-family: 'Arial', sans-serif;
+            font-size: 16px;
+            color: #333;
+        }
+
+        /* 鼠标悬停效果 */
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 遮罩层 -->
+    <div class="overlay"></div>
+
+    <div class="container">
+        <h1>垃圾邮件判定器</h1>
+        <textarea id="emailContent" placeholder="请输入待判定邮件内容..."></textarea>
+        <button onclick="predictSpam()">PREDICT</button>
+        <table id="resultTable" style="display: none;">
+            <thead>
+            <tr>
+                <th>Model</th>
+                <th>Prediction</th>
+                <th>Label</th>
+            </tr>
+            </thead>
+            <tbody id="resultTableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // 预定义模型的顺序
+        const modelOrder = ["CNN", "BiLSTM", "DecisionTree", "NaiveBayes"];
+
+        function predictSpam() {
+            const emailContent = document.getElementById('emailContent').value;
+            if (!emailContent.trim()) {
+                alert("请输入邮件内容。");
+                return;
+            }
+            $("#resultTableBody").html("");
+
+            $.ajax({
+                url: '/predict',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ email_content: emailContent }),
+                success: function (response) {
+                    const result = response.result;
+
+                    modelOrder.forEach(model => {
+                        if (result[model]) {
+                            const probability = result[model].Probability.toFixed(4);
+                            const prediction = result[model].Prediction;
+                            const predictionClass = prediction === 'Spam' ? 'spam' : 'legitimate';
+
+                            const rowHTML = `
+                                <tr>
+                                    <td><span class="model-name">${model}</span></td>
+                                    <td>${probability}</td>
+                                    <td class="${predictionClass}">${prediction}</td>
+                                </tr>
+                            `;
+                            $("#resultTableBody").append(rowHTML);
+                        }
+                    });
+
+                    document.getElementById("resultTable").style.display = "table";
+                },
+                error: function (err) {
+                    alert("预测时出错，请重试。");
+                    console.error(err);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
